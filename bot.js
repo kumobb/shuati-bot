@@ -70,6 +70,7 @@ client.on("messageCreate", (message) => {
     } else message.reply("这位更是个...");
   }
 
+
   /*
   // Another check in command - will augment result
   if (command === "checkin2") {
@@ -85,6 +86,13 @@ client.on("messageCreate", (message) => {
     } else message.reply("这位更是个...");
   }
   */
+  
+  if (command === "help") {
+    message.reply(
+      "!checkin count: 打卡今日做题数量，会覆盖今天的记录\n!leaders: 显示本周前三卷王"
+    );
+  }
+  
 
   // Clear daily record in case mistakenly input wrong number
   if (command === "clear") {
