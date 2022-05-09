@@ -1,3 +1,6 @@
+const log = require("npmlog");
+const cron = require("cron");
+
 const Discord = require("discord.js");
 const prefix = "!";
 const client = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES"] });
@@ -14,9 +17,24 @@ const connection = mysql.createConnection({
   database: process.env.MYSQL_DBNAME,
 });
 
+/*
+User-Defined Commands
+*/
+
 client.on("ready", () => {
-  console.log("Ready");
+  log.info("Ready");
   client.user.setActivity("刷LeetCode");
+
+  let scheduledMessage = new cron.CronJob("0 0 18 * * SUN", function () {
+    getWeeklyResult(function (topThree) {
+      let juanWang = "本周的卷王是：";
+      for (let i in topThree) {
+        juanWang += topThree[i].user_id + " ";
+      }
+      client.channels.cache.get(process.env.CHANNEL_ID).send(juanWang);
+    });
+  });
+  scheduledMessage.start();
 });
 
 client.on("messageCreate", (message) => {
@@ -26,12 +44,23 @@ client.on("messageCreate", (message) => {
   const args = message.content.slice(prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
-  // Check-In Command
+  // Daily check in
   if (command === "checkin") {
     let num = args[0];
     // Here we save user's response to database
     // and show a prompt
     saveResult(message.author.id, num, message);
+  }
+
+  // Clear daily record in case mistakenly input wrong number
+  if (command === "clear") {
+    clearResult(message.author.id);
+    message.channel.send("今天的记录已清空！");
+  }
+
+  // Show leaderboard
+  if (command === "leaders") {
+    sendWeeklyResult(message);
   }
 
   if (command === "remind") {
@@ -83,6 +112,42 @@ function getPrevRecord(userId, callback) {
       if (err) throw err;
       if (result.length === 0) callback(0);
       else callback(result[0].num_probs);
+    }
+  );
+}
+
+function clearResult(userId) {
+  connection.query(
+    "DELETE FROM user_record WHERE user_id = ? and day = current_date",
+    [userId],
+    function (err, result) {
+      if (err) throw err;
+    }
+  );
+}
+
+function sendWeeklyResult(message) {
+  getWeeklyResult(function (topThree) {
+    let juanWang = "本周的卷王是：";
+    for (let i in topThree) {
+      juanWang += topThree[i].user_id + " ";
+    }
+    // client.channels.cache.get(process.env.CHANNEL_ID).send(juanWang);
+    message.reply(juanWang);
+  });
+}
+
+function getWeeklyResult(callback) {
+  connection.query(
+    `SELECT user_id, SUM(num_probs) 
+    FROM user_record 
+    WHERE day BETWEEN DATE_SUB(current_date, INTERVAL(WEEKDAY(current_date)) DAY) AND current_date 
+    GROUP BY user_id 
+    ORDER BY SUM(num_probs) DESC 
+    LIMIT 3`,
+    function (err, result) {
+      if (err) throw err;
+      else callback(result);
     }
   );
 }
