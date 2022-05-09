@@ -86,7 +86,7 @@ client.on("messageCreate", (message) => {
 
   if (command === "help") {
     message.reply(
-      "!checkin count: 打卡今日做题数量\n!leaders: 显示本周前三卷王"
+      "!checkin count: 打卡今日做题数量，会覆盖今天的记录\n!leaders: 显示本周前三卷王"
     );
   }
 
