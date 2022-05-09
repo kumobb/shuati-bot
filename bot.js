@@ -15,6 +15,7 @@ const connection = mysql.createPool({
   user: process.env.MYSQL_USERNAME,
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DBNAME,
+  multipleStatements: true,
 });
 
 /*
@@ -28,16 +29,23 @@ client.on("ready", () => {
   client.user.setActivity("刷LeetCode");
 
   // Start scheduled tasks
-  let scheduledMessage = new cron.CronJob("0 0 18 * * SUN", function () {
-    getWeeklyResult(function (topThree) {
+  let weeklyRanking = new cron.CronJob("0 0 23 * * SUN", function () {
+    getWeeklyResult(function (leaders) {
       let juanWang = "本周的卷王是：";
-      for (let i in topThree) {
-        juanWang += topThree[i].username + " ";
+      for (let i = 0; i < 3; i++) {
+        juanWang += leaders[i].username + " ";
       }
       client.channels.cache.get(process.env.CHANNEL_ID).send(juanWang);
     });
   });
-  scheduledMessage.start();
+  weeklyRanking.start();
+
+  let dailyReminder = new cron.CronJob("0 0 15 * * *", function () {
+    client.channels.cache
+      .get(process.env.CHANNEL_ID)
+      .send("@everyone, 今天你刷题了吗?");
+  });
+  dailyReminder.start();
 });
 
 client.on("messageCreate", (message) => {
@@ -49,16 +57,22 @@ client.on("messageCreate", (message) => {
 
   // Daily check in
   if (command === "checkin") {
-    let num = args[0];
-    // Here we save user's response to database
-    // and show a prompt
-    saveResult(message.author.id, message.author.username, num, message);
+    let arg = args[0];
+    let num = Number(arg);
+    if (Number.isInteger(num)) {
+      if (num > 0) {
+        // Here we save user's response to database
+        // and show a prompt
+        saveResult(message.author.id, message.author.username, num, message);
+      } else if (num === 0) message.reply("今天没刷题，你不心痛吗？");
+      else message.reply("这位更是个...");
+    } else message.reply("这位更是个...");
   }
 
   // Clear daily record in case mistakenly input wrong number
   if (command === "clear") {
     clearResult(message.author.id);
-    message.channel.send("今天的记录已清空！");
+    message.reply("今天的记录已清空！");
   }
 
   // Show leaderboard
@@ -74,9 +88,9 @@ client.on("messageCreate", (message) => {
     message.channel.send("test");
   }
 
-  if (command === "reply") {
-    message.channel.send(`<@${message.author.id}> 今天你刷题了吗?`);
-  }
+  // if (command === "reply") {
+  //   message.channel.send(`<@${message.author.id}> 今天你刷题了吗?`);
+  // }
 });
 
 /*
@@ -91,18 +105,23 @@ function saveResult(userId, username, numProbs, message) {
     let result = parseInt(numProbs) + parseInt(num);
     if (num === 0) {
       connection.query(
-        "INSERT INTO user_record (user_id, username, num_probs, day) VALUES (?, ?, ?, current_date)",
+        `
+        INSERT INTO user_record (user_id, username, num_probs) VALUES (?, ?, ?)
+        `,
         [userId, username, result],
         function (err, result) {
-          if (err) throw err;
+          if (err) log.error(err);
         }
       );
     } else {
       connection.query(
-        "UPDATE user_record SET num_probs = ? WHERE user_id = ? and day = current_date",
+        `
+        UPDATE user_record SET num_probs = ?
+        WHERE user_id = ? AND DATE(CONVERT_TZ(timestamp, 'UTC', 'America/Los_Angeles')) = DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles'))
+        `,
         [result, userId],
         function (err, result) {
-          if (err) throw err;
+          if (err) log.error(err);
         }
       );
     }
@@ -115,10 +134,13 @@ function saveResult(userId, username, numProbs, message) {
 // Retrieve user's daily record
 function getPrevRecord(userId, callback) {
   connection.query(
-    "SELECT num_probs FROM user_record WHERE user_id = ? and day = current_date",
+    `
+    SELECT num_probs FROM user_record
+    WHERE user_id = ? AND DATE(CONVERT_TZ(timestamp, 'UTC', 'America/Los_Angeles')) = DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles'))
+    `,
     [userId],
     function (err, result) {
-      if (err) throw err;
+      if (err) log.error(err);
       if (result.length === 0) callback(0);
       else callback(result[0].num_probs);
     }
@@ -127,19 +149,23 @@ function getPrevRecord(userId, callback) {
 
 function clearResult(userId) {
   connection.query(
-    "DELETE FROM user_record WHERE user_id = ? and day = current_date",
+    `
+    DELETE FROM user_record
+    WHERE user_id = ? AND DATE(CONVERT_TZ(timestamp, 'UTC', 'America/Los_Angeles')) = DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles'))
+    `,
     [userId],
     function (err, result) {
-      if (err) throw err;
+      if (err) log.error(err);
     }
   );
 }
 
 function sendWeeklyResult(message) {
-  getWeeklyResult(function (topThree) {
+  getWeeklyResult(function (leaders) {
     let juanWang = "本周的卷王是：";
-    for (let i in topThree) {
-      juanWang += topThree[i].username + " ";
+    let length = Math.min(3, leaders.length);
+    for (let i = 0; i < length; i++) {
+      juanWang += leaders[i].username + " ";
     }
     message.reply(juanWang);
   });
@@ -148,32 +174,33 @@ function sendWeeklyResult(message) {
 function getWeeklyResult(callback) {
   connection.query(
     `
-    WITH leaders AS (
-      SELECT user_id, SUM(num_probs) AS num 
-      FROM user_record 
-      WHERE day BETWEEN DATE_SUB(current_date, INTERVAL(WEEKDAY(current_date)) DAY) AND current_date 
-      GROUP BY user_id 
-      ORDER BY SUM(num_probs) DESC 
-      LIMIT 3
-    ),
-    record AS (
-      SELECT user_id, MAX(id) AS row_num
-      FROM user_record
-      WHERE day BETWEEN DATE_SUB(current_date, INTERVAL(WEEKDAY(current_date)) DAY) AND current_date
-      GROUP BY user_id
-    ),
-    temp AS (
-      SELECT row_num, num 
-      FROM leaders JOIN record 
-      ON leaders.user_id = record.user_id
-    )
-    SELECT username, num 
-    FROM temp JOIN user_record
+    SELECT username, num
+    FROM (
+      SELECT row_num, num
+      FROM (
+        SELECT user_id, SUM(num_probs) AS num
+        FROM user_record
+        WHERE DATE(CONVERT_TZ(timestamp, 'UTC', 'America/Los_Angeles'))
+        BETWEEN DATE_SUB(DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles')), INTERVAL(WEEKDAY(CURRENT_DATE)) DAY)
+        AND DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles'))
+        GROUP BY user_id
+      ) user_prob
+      JOIN (
+        SELECT user_id, MAX(id) AS row_num
+        FROM user_record
+        WHERE DATE(CONVERT_TZ(timestamp, 'UTC', 'America/Los_Angeles'))
+        BETWEEN DATE_SUB(DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles')), INTERVAL(WEEKDAY(CURRENT_DATE)) DAY)
+        AND DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles'))
+        GROUP BY user_id
+      ) record
+      ON user_prob.user_id = record.user_id
+    ) temp
+    JOIN user_record
     ON temp.row_num = user_record.id
     ORDER BY num DESC
     `,
     function (err, result) {
-      if (err) throw err;
+      if (err) log.error(err);
       else callback(result);
     }
   );
