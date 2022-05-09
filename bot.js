@@ -82,6 +82,9 @@ client.on("messageCreate", (message) => {
       } else if (num === 0) message.reply("今天没刷题，你不心痛吗？");
       else message.reply("这位更是个...");
     } else message.reply("这位更是个...");
+
+  if (command === "help") {
+    message.reply("!checkin count: 打卡今日做题数量\n!leaders: 显示本周前三卷王");
   }
 
   // Clear daily record in case mistakenly input wrong number
