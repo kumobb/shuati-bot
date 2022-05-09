@@ -32,8 +32,9 @@ client.on("ready", () => {
   let weeklyRanking = new cron.CronJob("0 0 23 * * SUN", function () {
     getWeeklyResult(function (leaders) {
       let juanWang = "本周的卷王是：";
-      for (let i = 0; i < 3; i++) {
-        juanWang += leaders[i].username + " ";
+      let length = Math.min(3, leaders.length);
+      for (let i = 0; i < length; i++) {
+        juanWang += `${leaders[i].username}(${leaders[i].num}) `;
       }
       client.channels.cache.get(process.env.CHANNEL_ID).send(juanWang);
     });
@@ -69,6 +70,20 @@ client.on("messageCreate", (message) => {
     } else message.reply("这位更是个...");
   }
 
+  // Another check in command - will augment result
+  if (command === "checkin2") {
+    let arg = args[0];
+    let num = Number(arg);
+    if (Number.isInteger(num)) {
+      if (num > 0) {
+        // Here we save user's response to database
+        // and show a prompt
+        saveResultAdd(message.author.id, message.author.username, num, message);
+      } else if (num === 0) message.reply("今天没刷题，你不心痛吗？");
+      else message.reply("这位更是个...");
+    } else message.reply("这位更是个...");
+  }
+
   // Clear daily record in case mistakenly input wrong number
   if (command === "clear") {
     clearResult(message.author.id);
@@ -77,11 +92,7 @@ client.on("messageCreate", (message) => {
 
   // Show leaderboard
   if (command === "leaders") {
-    sendWeeklyResult(message);
-  }
-
-  if (command === "remind") {
-    message.channel.send("@everyone, 今天你刷题了吗?");
+    sendWeeklyReport(message);
   }
 
   if (command === "test") {
@@ -99,8 +110,9 @@ Functions needed for commands
 ---------------------------------------
 */
 
-// Save records to database
-function saveResult(userId, username, numProbs, message) {
+// Save records to database (using logic of augmenting)
+// Decide not to use
+function saveResultAdd(userId, username, numProbs, message) {
   getPrevRecord(userId, function (num) {
     let result = parseInt(numProbs) + parseInt(num);
     if (num === 0) {
@@ -128,6 +140,37 @@ function saveResult(userId, username, numProbs, message) {
     message.reply(
       `${message.author.username}, 打卡成功！你今天做了${result}题，你太牛了!`
     );
+  });
+}
+
+// Save records to database (using logic of replacing)
+function saveResult(userId, username, numProbs, message) {
+  message.reply(
+    `${message.author.username}, 打卡成功！你今天做了${numProbs}题，你太牛了!`
+  );
+  getPrevRecord(userId, function (num) {
+    if (num === 0) {
+      connection.query(
+        `
+        INSERT INTO user_record (user_id, username, num_probs) VALUES (?, ?, ?)
+        `,
+        [userId, username, numProbs],
+        function (err, result) {
+          if (err) log.error(err);
+        }
+      );
+    } else {
+      connection.query(
+        `
+        UPDATE user_record SET num_probs = ?
+        WHERE user_id = ? AND DATE(CONVERT_TZ(timestamp, 'UTC', 'America/Los_Angeles')) = DATE(CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Los_Angeles'))
+        `,
+        [numProbs, userId],
+        function (err, result) {
+          if (err) log.error(err);
+        }
+      );
+    }
   });
 }
 
@@ -160,18 +203,18 @@ function clearResult(userId) {
   );
 }
 
-function sendWeeklyResult(message) {
-  getWeeklyResult(function (leaders) {
+function sendWeeklyReport(message) {
+  getWeeklyReport(function (leaders) {
     let juanWang = "本周的卷王是：";
     let length = Math.min(3, leaders.length);
     for (let i = 0; i < length; i++) {
-      juanWang += leaders[i].username + " ";
+      juanWang += `${leaders[i].username}(${leaders[i].num}) `;
     }
     message.reply(juanWang);
   });
 }
 
-function getWeeklyResult(callback) {
+function getWeeklyReport(callback) {
   connection.query(
     `
     SELECT username, num
