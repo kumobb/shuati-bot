@@ -18,13 +18,16 @@ const connection = mysql.createConnection({
 });
 
 /*
-User-Defined Commands
+---------------------------------------
+Bot commands
+---------------------------------------
 */
 
 client.on("ready", () => {
   log.info("Ready");
   client.user.setActivity("刷LeetCode");
 
+  // Start scheduled tasks
   let scheduledMessage = new cron.CronJob("0 0 18 * * SUN", function () {
     getWeeklyResult(function (topThree) {
       let juanWang = "本周的卷王是：";
@@ -75,6 +78,12 @@ client.on("messageCreate", (message) => {
     message.channel.send(`<@${message.author.id}> 今天你刷题了吗?`);
   }
 });
+
+/*
+---------------------------------------
+Functions needed for commands
+---------------------------------------
+*/
 
 // Save records to database
 function saveResult(userId, numProbs, message) {
@@ -132,7 +141,6 @@ function sendWeeklyResult(message) {
     for (let i in topThree) {
       juanWang += topThree[i].user_id + " ";
     }
-    // client.channels.cache.get(process.env.CHANNEL_ID).send(juanWang);
     message.reply(juanWang);
   });
 }
