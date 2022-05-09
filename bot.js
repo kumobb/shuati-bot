@@ -69,7 +69,7 @@ client.on("messageCreate", (message) => {
     } else message.reply("这位更是个...");
   }
 
-  if (command == "help") {
+  if (command === "help") {
     message.reply("!checkin count: 打卡今日做题数量\n!leaders: 显示本周前三卷王");
   }
 
