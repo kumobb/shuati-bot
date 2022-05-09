@@ -10,7 +10,7 @@ dotenv.config();
 const token = process.env.TOKEN;
 
 const mysql = require("mysql2");
-const connection = mysql.createConnection({
+const connection = mysql.createPool({
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USERNAME,
   password: process.env.MYSQL_PASSWORD,
@@ -32,7 +32,7 @@ client.on("ready", () => {
     getWeeklyResult(function (topThree) {
       let juanWang = "本周的卷王是：";
       for (let i in topThree) {
-        juanWang += topThree[i].user_id + " ";
+        juanWang += topThree[i].username + " ";
       }
       client.channels.cache.get(process.env.CHANNEL_ID).send(juanWang);
     });
@@ -52,7 +52,7 @@ client.on("messageCreate", (message) => {
     let num = args[0];
     // Here we save user's response to database
     // and show a prompt
-    saveResult(message.author.id, num, message);
+    saveResult(message.author.id, message.author.username, num, message);
   }
 
   // Clear daily record in case mistakenly input wrong number
@@ -86,13 +86,13 @@ Functions needed for commands
 */
 
 // Save records to database
-function saveResult(userId, numProbs, message) {
+function saveResult(userId, username, numProbs, message) {
   getPrevRecord(userId, function (num) {
     let result = parseInt(numProbs) + parseInt(num);
     if (num === 0) {
       connection.query(
-        "INSERT INTO user_record (user_id, num_probs, day) VALUES (?, ?, current_date)",
-        [userId, result],
+        "INSERT INTO user_record (user_id, username, num_probs, day) VALUES (?, ?, ?, current_date)",
+        [userId, username, result],
         function (err, result) {
           if (err) throw err;
         }
@@ -139,7 +139,7 @@ function sendWeeklyResult(message) {
   getWeeklyResult(function (topThree) {
     let juanWang = "本周的卷王是：";
     for (let i in topThree) {
-      juanWang += topThree[i].user_id + " ";
+      juanWang += topThree[i].username + " ";
     }
     message.reply(juanWang);
   });
@@ -147,12 +147,31 @@ function sendWeeklyResult(message) {
 
 function getWeeklyResult(callback) {
   connection.query(
-    `SELECT user_id, SUM(num_probs) 
-    FROM user_record 
-    WHERE day BETWEEN DATE_SUB(current_date, INTERVAL(WEEKDAY(current_date)) DAY) AND current_date 
-    GROUP BY user_id 
-    ORDER BY SUM(num_probs) DESC 
-    LIMIT 3`,
+    `
+    WITH leaders AS (
+      SELECT user_id, SUM(num_probs) AS num 
+      FROM user_record 
+      WHERE day BETWEEN DATE_SUB(current_date, INTERVAL(WEEKDAY(current_date)) DAY) AND current_date 
+      GROUP BY user_id 
+      ORDER BY SUM(num_probs) DESC 
+      LIMIT 3
+    ),
+    record AS (
+      SELECT user_id, MAX(id) AS row_num
+      FROM user_record
+      WHERE day BETWEEN DATE_SUB(current_date, INTERVAL(WEEKDAY(current_date)) DAY) AND current_date
+      GROUP BY user_id
+    ),
+    temp AS (
+      SELECT row_num, num 
+      FROM leaders JOIN record 
+      ON leaders.user_id = record.user_id
+    )
+    SELECT username, num 
+    FROM temp JOIN user_record
+    ON temp.row_num = user_record.id
+    ORDER BY num DESC
+    `,
     function (err, result) {
       if (err) throw err;
       else callback(result);
