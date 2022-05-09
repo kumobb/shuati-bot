@@ -59,7 +59,9 @@ client.on("messageCreate", (message) => {
     let arg = args[0];
     let num = Number(arg);
     if (Number.isInteger(num)) {
-      if (num > 0) {
+      if (num > 20) {
+        message.reply("别卷了别卷了(一天做多打卡20题)");
+      } else if (num > 0) {
         // Here we save user's response to database
         // and show a prompt
         saveResult(message.author.id, message.author.username, num, message);
@@ -68,6 +70,7 @@ client.on("messageCreate", (message) => {
     } else message.reply("这位更是个...");
   }
 
+  /*
   // Another check in command - will augment result
   if (command === "checkin2") {
     let arg = args[0];
@@ -81,6 +84,7 @@ client.on("messageCreate", (message) => {
       else message.reply("这位更是个...");
     } else message.reply("这位更是个...");
   }
+  */
 
   // Clear daily record in case mistakenly input wrong number
   if (command === "clear") {
