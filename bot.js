@@ -5,8 +5,6 @@ const Discord = require("discord.js");
 const prefix = "!";
 const client = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES"] });
 
-const dotenv = require("dotenv");
-dotenv.config();
 const token = process.env.TOKEN;
 
 const mysql = require("mysql2");
