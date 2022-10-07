@@ -51,7 +51,7 @@ client.once("ready", () => {
   weeklyRanking.start();
 
   // Because of timezone difference, this task starts at 8pm LA time.
-  const dailyReminder = new cron.CronJob("0 40 12 * * *", function () {
+  const dailyReminder = new cron.CronJob("0 10 13 * * *", function () {
     const embed = {
       color: 0xf3e600,
       title: "今天你刷题了吗？",
