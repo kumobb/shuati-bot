@@ -51,7 +51,7 @@ client.once("ready", () => {
   weeklyRanking.start();
 
   // Because of timezone difference, this task starts at 8pm LA time.
-  const dailyReminder = new cron.CronJob("0 0 21 * * *", function () {
+  const dailyReminder = new cron.CronJob("0 0 5 * * *", function () {
     const embed = {
       color: 0xf3e600,
       title: "今天你刷题了吗？",
@@ -90,7 +90,6 @@ client.on("interactionCreate", async (interaction) => {
 
   if (commandName === "checkin") {
     const num = interaction.options.getInteger("刷题数");
-    console.log(num);
     if (num > 20) {
       await interaction.reply("别卷了别卷了（一天最多打卡20题）");
     } else if (num > 0) {
@@ -102,7 +101,7 @@ client.on("interactionCreate", async (interaction) => {
       message.react("👍");
     } else if (num === 0) {
       const message = await interaction.reply({
-        content: "你搁这摆烂呢？",
+        content: "你还搁这摆烂呢？",
         fetchReply: true,
       });
       message.react("😡");

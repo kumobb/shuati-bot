@@ -10,7 +10,10 @@ const commands = [
     .setName("checkin")
     .setDescription("记录今天你刷的题目")
     .addIntegerOption((option) =>
-      option.setName("刷题数").setDescription("今天你刷的题目数量")
+      option
+        .setName("刷题数")
+        .setDescription("今天你刷的题目数量")
+        .setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName("leaders")
