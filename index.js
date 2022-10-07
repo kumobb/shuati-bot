@@ -4,12 +4,12 @@ const emojiCharacters = require("./emojiCharacters.js");
 const { Client, GatewayIntentBits } = require("discord.js");
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// const { token, dbUser, database, dbPwd, channelId } = require("./config.json");
-const token = process.env.TOKEN;
-const dbUser = process.env.DBUSER;
-const database = process.env.DATABASE;
-const dbPwd = process.env.DBPWD;
-const channelId = process.env.CHANNELID;
+const { token, dbUser, database, dbPwd, channelId } = require("./config.json");
+// const token = process.env.TOKEN;
+// const dbUser = process.env.DBUSER;
+// const database = process.env.DATABASE;
+// const dbPwd = process.env.DBPWD;
+// const channelId = process.env.CHANNELID;
 
 const { Pool } = require("pg");
 const pool = new Pool({
