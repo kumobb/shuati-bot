@@ -1,4 +1,3 @@
-const log = require("npmlog");
 const cron = require("cron");
 const emojiCharacters = require("./emojiCharacters.js");
 const { Client, GatewayIntentBits } = require("discord.js");
@@ -37,14 +36,14 @@ Bot commands
 */
 
 client.once("ready", () => {
-  log.info(`Logged in as ${client.user.tag}!`);
+  console.log(getCurrentTimestamp(), `Logged in as ${client.user.tag}!`);
 
   client.user.setActivity("刷LeetCode");
 
   // Start scheduled tasks
   const weeklyRanking = new cron.CronJob("0 0 21 * * SUN", function () {
     getWeeklyReport(generateLeaderboard, null);
-    log.info("Weekly report sent");
+    console.log(getCurrentTimestamp(), "Weekly report sent");
   });
   weeklyRanking.start();
 
@@ -171,7 +170,7 @@ function saveResult(interaction, numProbs) {
         `,
           [interaction.user.id, interaction.user.username, numProbs]
         )
-        .catch((err) => log.error(err));
+        .catch((err) => console.error(getCurrentTimestamp(), err));
     } else {
       pool
         .query(
@@ -181,10 +180,13 @@ function saveResult(interaction, numProbs) {
         `,
           [numProbs, interaction.user.id]
         )
-        .catch((err) => log.error(err));
+        .catch((err) => console.err(getCurrentTimestamp(), err));
     }
   });
-  log.info(`result saved for ${interaction.user.id}, number ${numProbs}`);
+  console.log(
+    getCurrentTimestamp(),
+    `result saved for ${interaction.user.id}, number ${numProbs}`
+  );
 }
 
 // Retrieve user's daily record
@@ -198,8 +200,8 @@ function getTodayRecord(userId, callback) {
       [userId]
     )
     .then((res) => callback(res.rows.length))
-    .catch((err) => log.error(err));
-  log.info(`record retrieved for ${userId}`);
+    .catch((err) => console.error(getCurrentTimestamp(), err));
+  console.log(getCurrentTimestamp(), `record retrieved for ${userId}`);
 }
 
 // // Clear the record for a user on the current date
@@ -284,7 +286,7 @@ function getWeeklyReport(callback, interaction) {
       `
     )
     .then((res) => callback(res.rows, interaction))
-    .catch((err) => log.error(err));
+    .catch((err) => console.error(getCurrentTimestamp(), err));
 }
 
 // Get start date of given timestamp
@@ -292,4 +294,11 @@ function getMonday(date) {
   const day = date.getDay();
   const diff = date.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
   return new Date(date.setDate(diff)).toISOString().split("T")[0];
+}
+
+function getCurrentTimestamp() {
+  return new Date().toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    hour12: false,
+  });
 }

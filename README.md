@@ -3,6 +3,14 @@ Yunding Wu, <br />
 Daizong (Colin) Wu, daizongw@usc.edu <br />
 University of Southern California <br />
 
+<h2>Depoly Command</h2>
+
+```
+git pull origin main
+node deploy-commands.js
+node index.js >> logs/log.txt &
+```
+
 <h2>Changelog</h2>
 <h3>v2.0</h3>
 
