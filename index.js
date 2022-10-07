@@ -115,7 +115,7 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 
-  // Show leaderboard PRIVATELY
+  // Show leaderboard
   if (commandName === "leaders") {
     await interaction.reply("本周排行榜已送达～");
     getWeeklyReport(generateLeaderboard);
@@ -220,7 +220,7 @@ function getTodayRecord(userId, callback) {
 //   log.info(`record cleared for ${userId}`);
 // }
 
-// Generate a list of people ordered by the number of problems solved each week
+// Generate list of people ordered by number of problems solved each week
 function generateLeaderboard(leaders) {
   var text = "";
   // Here you can specify the number of people displayed manually
@@ -237,6 +237,7 @@ function generateLeaderboard(leaders) {
       name: "刷题bot",
       iconURL: "https://image.doubilm.com/images/2022-08-11/1661230218076.jpg",
     },
+    description: `起始时间：${getMonday(new Date())}`,
     thumbnail: {
       url: "https://i.pinimg.com/originals/69/e0/6a/69e06a096ec5e14eefa1b7ff72fddf7f.gif",
     },
@@ -250,7 +251,7 @@ function generateLeaderboard(leaders) {
   client.channels.cache.get(channelId).send({ embeds: [embed] });
 }
 
-// Compute the weekly report
+// Compute weekly report
 function getWeeklyReport(callback, interaction) {
   pool
     .query(
@@ -283,4 +284,11 @@ function getWeeklyReport(callback, interaction) {
     )
     .then((res) => callback(res.rows, interaction))
     .catch((err) => log.error(err));
+}
+
+// Get start date of given timestamp
+function getMonday(date) {
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
+  return new Date(date.setDate(diff)).toISOString().split("T")[0];
 }
