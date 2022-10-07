@@ -42,16 +42,14 @@ client.once("ready", () => {
   client.user.setActivity("刷LeetCode");
 
   // Start scheduled tasks
-  const weeklyRanking = new cron.CronJob("0 0 19 * * SUN", function () {
-    getWeeklyReport(async function () {
-      getWeeklyReport(generateLeaderboard);
-      log.info("Weekly report sent");
-    });
+  const weeklyRanking = new cron.CronJob("0 0 21 * * SUN", function () {
+    getWeeklyReport(generateLeaderboard, null);
+    log.info("Weekly report sent");
   });
   weeklyRanking.start();
 
   // Because of timezone difference, this task starts at 8pm LA time.
-  const dailyReminder = new cron.CronJob("0 10 13 * * *", function () {
+  const dailyReminder = new cron.CronJob("0 0 20 * * *", function () {
     const embed = {
       color: 0xf3e600,
       title: "今天你刷题了吗？",
@@ -116,8 +114,8 @@ client.on("interactionCreate", async (interaction) => {
 
   // Show leaderboard
   if (commandName === "leaders") {
-    await interaction.reply("本周排行榜已送达～");
-    getWeeklyReport(generateLeaderboard);
+    // await interaction.reply("本周排行榜已送达～");
+    getWeeklyReport(generateLeaderboard, interaction);
   }
 });
 
@@ -220,7 +218,7 @@ function getTodayRecord(userId, callback) {
 // }
 
 // Generate list of people ordered by number of problems solved each week
-function generateLeaderboard(leaders) {
+function generateLeaderboard(leaders, interaction) {
   var text = "";
   // Here you can specify the number of people displayed manually
   const length = Math.min(10, leaders.length);
@@ -247,7 +245,11 @@ function generateLeaderboard(leaders) {
       },
     ],
   };
-  client.channels.cache.get(channelId).send({ embeds: [embed] });
+  if (interaction === null) {
+    client.channels.cache.get(channelId).send({ embeds: [embed] });
+  } else {
+    interaction.reply({ embeds: [embed] });
+  }
 }
 
 // Compute weekly report
