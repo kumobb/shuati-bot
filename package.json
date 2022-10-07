@@ -2,10 +2,10 @@
   "name": "shuati-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "bot.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node bot.js"
+    "start": "node deploy-commands.js; node index.js"
   },
   "author": "",
   "license": "ISC",
