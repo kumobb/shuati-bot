@@ -1,7 +1,14 @@
 const cron = require("cron");
-const emojiCharacters = require("./emojiCharacters.js");
+
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(utc);
+dayjs.extend(customParseFormat);
+
 const { Client, GatewayIntentBits } = require("discord.js");
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const emojiCharacters = require("./emojiCharacters.js");
 
 const { token, dbUser, database, dbPwd, channelId } = require("./config.json");
 // const token = process.env.TOKEN;
@@ -16,8 +23,10 @@ const pool = new Pool({
   host: "db.bit.io",
   database: database,
   password: dbPwd,
-  port: 5432,
   ssl: true,
+  port: 5432,
+  // host: "localhost",
+  // database: "dc_bot",
 });
 
 // const mysql = require("mysql2");
@@ -92,7 +101,7 @@ client.on("interactionCreate", async (interaction) => {
     } else if (num > 0) {
       saveResult(interaction, num);
       const message = await interaction.reply({
-        content: `${interaction.user.username}，打卡成功！你今天做了${num}题，你太牛了!`,
+        content: `${interaction.member.nickname}，打卡成功！你今天做了${num}题，你太牛了!`,
         fetchReply: true,
       });
       message.react("👍");
@@ -168,7 +177,7 @@ function saveResult(interaction, numProbs) {
           `
         INSERT INTO user_record (user_id, username, num_probs) VALUES ($1, $2, $3)
         `,
-          [interaction.user.id, interaction.user.username, numProbs]
+          [interaction.user.id, interaction.member.nickname, numProbs]
         )
         .catch((err) => console.error(getCurrentTimestamp(), err));
     } else {
@@ -236,7 +245,11 @@ function generateLeaderboard(leaders, interaction) {
       name: "刷题bot",
       iconURL: "https://image.doubilm.com/images/2022-08-11/1661230218076.jpg",
     },
-    description: `起始时间：${getMonday(new Date())}`,
+    description: `起始时间：${dayjs()
+      .local()
+      .startOf("week")
+      .add(1, "day")
+      .format("YYYY-MM-DD")}`,
     thumbnail: {
       url: "https://i.pinimg.com/originals/69/e0/6a/69e06a096ec5e14eefa1b7ff72fddf7f.gif",
     },
@@ -289,16 +302,6 @@ function getWeeklyReport(callback, interaction) {
     .catch((err) => console.error(getCurrentTimestamp(), err));
 }
 
-// Get start date of given timestamp
-function getMonday(date) {
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
-  return new Date(date.setDate(diff)).toISOString().split("T")[0];
-}
-
 function getCurrentTimestamp() {
-  return new Date().toLocaleString("en-US", {
-    timeZone: "America/Los_Angeles",
-    hour12: false,
-  });
+  return dayjs().local().format("YYYY-MM-DD HH:mm:ss");
 }
