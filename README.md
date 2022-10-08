@@ -6,7 +6,7 @@ In order to deploy on Google Cloud Platform, run following commands when logging
 
 ```
 eval "$(ssh-agent -s)"
-cat ~/.ssh/id_ed25519.pub
+ssh-add ~/.ssh/id_ed25519
 ```
 
 To build and run Shuati Bot, run following commands.
