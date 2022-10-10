@@ -279,16 +279,16 @@ function getWeeklyReport(callback, interaction) {
           SELECT user_id, SUM(num_probs) AS num
           FROM user_record
           WHERE DATE(timestamp)
-          BETWEEN DATE_TRUNC('week', CURRENT_TIMESTAMP)
-          AND DATE(CURRENT_TIMESTAMP)
+          BETWEEN (DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles')
+          AND CURRENT_TIMESTAMP
           GROUP BY user_id
         ) user_prob
         JOIN (
           SELECT user_id, MAX(id) AS row_num
           FROM user_record
           WHERE DATE(timestamp)
-          BETWEEN DATE_TRUNC('week', CURRENT_TIMESTAMP)
-          AND DATE(CURRENT_TIMESTAMP)
+          BETWEEN (DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles')
+          AND CURRENT_TIMESTAMP
           GROUP BY user_id
         ) record
         ON user_prob.user_id = record.user_id
