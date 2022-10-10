@@ -1,10 +1,7 @@
 const cron = require("cron");
 
-const dayjs = require("dayjs");
-const utc = require("dayjs/plugin/utc");
-const customParseFormat = require("dayjs/plugin/customParseFormat");
-dayjs.extend(utc);
-dayjs.extend(customParseFormat);
+const { startOfWeek, parseISO, format } = require("date-fns");
+const { formatInTimeZone } = require("date-fns-tz");
 
 const { Client, GatewayIntentBits } = require("discord.js");
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -245,11 +242,7 @@ function generateLeaderboard(leaders, interaction) {
       name: "刷题bot",
       iconURL: "https://image.doubilm.com/images/2022-08-11/1661230218076.jpg",
     },
-    description: `起始时间：${dayjs()
-      .local()
-      .startOf("week")
-      .add(1, "day")
-      .format("YYYY-MM-DD")}`,
+    description: `起始时间：${getMonday()}`,
     thumbnail: {
       url: "https://i.pinimg.com/originals/69/e0/6a/69e06a096ec5e14eefa1b7ff72fddf7f.gif",
     },
@@ -303,5 +296,16 @@ function getWeeklyReport(callback, interaction) {
 }
 
 function getCurrentTimestamp() {
-  return dayjs().local().format("YYYY-MM-DD HH:mm:ss");
+  return formatInTimeZone(
+    new Date(),
+    "America/Los_Angeles",
+    "yyyy-MM-dd HH:mm:ss"
+  );
+}
+
+function getMonday() {
+  return format(
+    startOfWeek(parseISO(getCurrentTimestamp()), { weekStartsOn: 1 }),
+    "yyyy-MM-dd"
+  );
 }
