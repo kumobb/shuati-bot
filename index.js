@@ -96,11 +96,11 @@ client.on("interactionCreate", async (interaction) => {
     if (num > 20) {
       await interaction.reply("别卷了别卷了（一天最多打卡20题）");
     } else if (num > 0) {
-      saveResult(interaction, num);
       const name =
         interaction.member.nickname === null
           ? interaction.user.username
           : interaction.member.nickname;
+      saveResult(interaction, name, num);
       const message = await interaction.reply({
         content: `${name}，打卡成功！你今天做了${num}题，你太牛了!`,
         fetchReply: true,
@@ -170,7 +170,7 @@ Functions needed for commands
 // }
 
 // Save records to database (using logic of replacing)
-function saveResult(interaction, numProbs) {
+function saveResult(interaction, username, numProbs) {
   getTodayRecord(interaction.user.id, function (exists) {
     if (exists === 0) {
       pool
@@ -178,7 +178,7 @@ function saveResult(interaction, numProbs) {
           `
         INSERT INTO user_record (user_id, username, num_probs) VALUES ($1, $2, $3)
         `,
-          [interaction.user.id, interaction.member.nickname, numProbs]
+          [interaction.user.id, username, numProbs]
         )
         .catch((err) => console.error(getCurrentTimestamp(), err));
     } else {
