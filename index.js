@@ -97,8 +97,12 @@ client.on("interactionCreate", async (interaction) => {
       await interaction.reply("别卷了别卷了（一天最多打卡20题）");
     } else if (num > 0) {
       saveResult(interaction, num);
+      const name =
+        interaction.member.nickname === null
+          ? interaction.user.username
+          : interaction.member.nickname;
       const message = await interaction.reply({
-        content: `${interaction.member.nickname}，打卡成功！你今天做了${num}题，你太牛了!`,
+        content: `${name}，打卡成功！你今天做了${num}题，你太牛了!`,
         fetchReply: true,
       });
       message.react("👍");
