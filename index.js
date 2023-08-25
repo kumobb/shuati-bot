@@ -7,33 +7,17 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const emojiCharacters = require("./emojiCharacters.js");
 
-const { token, dbUser, database, dbPwd, channelId } = require("./config.json");
-// const token = process.env.TOKEN;
-// const dbUser = process.env.DBUSER;
-// const database = process.env.DATABASE;
-// const dbPwd = process.env.DBPWD;
-// const channelId = process.env.CHANNELID;
+const { token, channelId, dbUser, host, database, dbPwd } = require("./config.json");
 
 const { Pool } = require("pg");
 const pool = new Pool({
   user: dbUser,
-  host: "db.bit.io",
+  host: host,
   database: database,
   password: dbPwd,
   ssl: true,
   port: 5432,
-  // host: "localhost",
-  // database: "dc_bot",
 });
-
-// const mysql = require("mysql2");
-// const connection = mysql.createPool({
-//   host: process.env.MYSQL_HOST,
-//   user: process.env.MYSQL_USERNAME,
-//   password: process.env.MYSQL_PASSWORD,
-//   database: process.env.MYSQL_DBNAME,
-//   multipleStatements: true,
-// });
 
 /*
 ---------------------------------------
