@@ -1,6 +1,6 @@
 <h1 style="text-align:center">Shuati Bot</h1>
 
-## Depoly Command
+## Deploy Command
 
 In order to deploy on Google Cloud Platform, run following commands when logging in:
 
@@ -28,6 +28,20 @@ sudo -i -u postgres
 psql
 \password {your password}
 \q
+```
+
+## Database Scripts
+
+Currently the postgres database only has one table `user-record`. To create this table, run this script:
+
+```
+create table user_record (
+  id serial primary key,
+  user_id varchar(100) not null,
+  username varchar(100) not null,
+  num_probs int not null,
+  timestamp timestamp not null default now()
+);
 ```
 
 ## Changelog
