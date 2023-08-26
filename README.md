@@ -2,23 +2,42 @@
 
 ## Depoly Command
 
-In order to deploy on Google Cloud Platform, run following commands when logging in.
+In order to deploy on Google Cloud Platform, run following commands when logging in:
 
 ```
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 ```
 
-To build and run Shuati Bot, run following commands.
+To build and run Shuati Bot, run following commands:
 
 ```
 git pull origin main
 npm install
 node deploy-commands.js
-pm2 start index.js -o logs/log.txt
+pm2 start index.js -o logs/log-info -e logs/log-err
+```
+
+To create the local postgres database, run following commands
+
+```
+sudo apt install postgresql
+sudo systemctl status postgresql
+sudo systemctl enable postgresql
+sudo -i -u postgres
+psql
+\password {your password}
+\q
 ```
 
 ## Changelog
+
+### v2.0.5
+As bit.io has been shut down, now the service is storing data in its local postgres database.
+
+### v2.0
+
+We are now using discord.js v14 as we are migrating service from Heroku to Google Cloud Platform
 
 ### v1.0
 
@@ -28,10 +47,6 @@ Initial release contains two basic functionalities:
     <li> Record number of questions solved for users </li>
     <li> Generate weekly report. </li>
 </ul>
-
-### v2.0
-
-We are now using discord.js v14 as we are migrating service from Heroku to Google Cloud Platform and Bit.io
 
 ## Creators
 
