@@ -7,15 +7,14 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const emojiCharacters = require("./emojiCharacters.js");
 
-const { token, channelId, dbUser, host, database, dbPwd } = require("./config.json");
+const { token, channelId, host, user, password, database } = require("./config.json");
 
 const { Pool } = require("pg");
 const pool = new Pool({
-  user: dbUser,
   host: host,
+  user: user,
+  password: password,
   database: database,
-  password: dbPwd,
-  ssl: true,
   port: 5432,
 });
 
